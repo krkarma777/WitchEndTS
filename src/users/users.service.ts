@@ -5,6 +5,7 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from "./dto/login-user.dto";
 import * as bcrypt from 'bcrypt';
+import {UpdateUserDto} from "./dto/update-user.dto";
 
 @Injectable()
 export class UsersService {
@@ -45,6 +46,11 @@ export class UsersService {
 
     async deleteUser(id: string): Promise<boolean> {
         const result = await this.usersRepository.delete(id);
+        return result.affected > 0;
+    }
+
+    async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<boolean> {
+        const result = await this.usersRepository.update(id, updateUserDto);
         return result.affected > 0;
     }
 }
