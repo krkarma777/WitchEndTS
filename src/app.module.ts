@@ -9,11 +9,11 @@ import { UsersModule } from './users/users.module';
     TypeOrmModule.forRoot({
       type: 'oracle',
       host: 'localhost',
-      port: 1521,
-      username: 'krkarma777',
+      port: 1522,
+      username: 'witchend',
       password: 'root',
-      sid: 'xe', // or serviceName: 'yourServiceName'
-      synchronize: false, // 개발 단계가 아닐 경우 false 추천
+      sid: 'orcl', // or serviceName: 'yourServiceName'
+      synchronize: true, // 개발 단계가 아닐 경우 false 추천
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       logging: false // 필요에 따라 true로 설정
     }),
