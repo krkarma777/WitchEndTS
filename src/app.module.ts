@@ -3,6 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
+import { GameCharactersController } from './game-characters/game-characters.controller';
+import { GameCharactersService } from './game-characters/game-characters.service';
+import { GameCharactersModule } from './game-characters/game-characters.module';
+import { EquipmentModule } from './equipment/equipment.module';
 
 @Module({
   imports: [
@@ -18,8 +22,10 @@ import { UsersModule } from './users/users.module';
       logging: false // 필요에 따라 true로 설정
     }),
     UsersModule,
+    GameCharactersModule,
+    EquipmentModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, GameCharactersController],
+  providers: [AppService, GameCharactersService],
 })
 export class AppModule {}
