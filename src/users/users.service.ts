@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from "./dto/login-user.dto";
+import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {User} from './entities/user.entity';
+import {CreateUserDto} from './dto/create-user.dto';
+import {LoginUserDto} from "./dto/login-user.dto";
 import * as bcrypt from 'bcrypt';
 import {UpdateUserDto} from "./dto/update-user.dto";
 
@@ -15,15 +15,27 @@ export class UsersService {
     ) {}
 
     async create(createUserDto: CreateUserDto): Promise<User> {
-        const existingUser = await this.findByEmail(createUserDto.email);
-        if (existingUser) {
-            throw new Error('이미 등록된 이메일입니다.');
+        const existingEmail = await this.findByEmail(createUserDto.email);
+        if (existingEmail) {
+            throw new HttpException('이미 등록된 이메일입니다.', HttpStatus.CONFLICT);
+        }
+
+        const existingUsername = await this.findByUsername(createUserDto.username);
+        if (existingUsername) {
+            throw new HttpException('이미 등록된 아이디입니다.', HttpStatus.CONFLICT);
         }
 
         createUserDto.password = bcrypt.hashSync(createUserDto.password, 10);
         const newUser = this.usersRepository.create(createUserDto);
         await this.usersRepository.save(newUser);
         return newUser;
+    }
+
+
+    async findByUsername(username: string): Promise<User> {
+        return await this.usersRepository.findOne({
+            where: { username },
+        })
     }
 
     async findByEmail(email: string): Promise<User | undefined> {
