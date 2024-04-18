@@ -44,6 +44,12 @@ export class UsersService {
         });
     }
 
+    async findById(id: number): Promise<User | undefined> {
+        return this.usersRepository.findOne({
+            where: { id }
+        });
+    }
+
     async login(loginUserDto: LoginUserDto): Promise<boolean> {
         const user = await this.usersRepository.findOne({
             where: { email: loginUserDto.email }
@@ -61,7 +67,13 @@ export class UsersService {
         return result.affected > 0;
     }
 
-    async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<boolean> {
+    async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<boolean> {
+
+        let user = await this.findById(id);
+        if (!user && await bcrypt.compare(updateUserDto.originalPassword, user.password)) {
+            throw new HttpException('비밀번호가 일치하지 않습니다.', HttpStatus.UNAUTHORIZED);
+        }
+
         const result = await this.usersRepository.update(id, updateUserDto);
         return result.affected > 0;
     }
