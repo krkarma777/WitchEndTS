@@ -1,23 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from "./dto/login-user.dto";
+import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {User} from './entities/user.entity';
+import {CreateUserDto} from './dto/create-user.dto';
+import {LoginUserDto} from "./dto/login-user.dto";
 import * as bcrypt from 'bcrypt';
 import {UpdateUserDto} from "./dto/update-user.dto";
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(User)
         private usersRepository: Repository<User>,
+        private jwtService: JwtService
     ) {}
 
     async create(createUserDto: CreateUserDto): Promise<User> {
-        const existingUser = await this.findByEmail(createUserDto.email);
-        if (existingUser) {
-            throw new Error('이미 등록된 이메일입니다.');
+        const existingEmail = await this.findByEmail(createUserDto.email);
+        if (existingEmail) {
+            throw new HttpException('이미 등록된 이메일입니다.', HttpStatus.CONFLICT);
+        }
+
+        const existingUsername = await this.findByUsername(createUserDto.username);
+        if (existingUsername) {
+            throw new HttpException('이미 등록된 아이디입니다.', HttpStatus.CONFLICT);
         }
 
         createUserDto.password = bcrypt.hashSync(createUserDto.password, 10);
@@ -26,22 +33,36 @@ export class UsersService {
         return newUser;
     }
 
+
+    async findByUsername(username: string): Promise<User> {
+        return await this.usersRepository.findOne({
+            where: { username },
+        })
+    }
+
     async findByEmail(email: string): Promise<User | undefined> {
         return this.usersRepository.findOne({
             where: { email }
         });
     }
 
-    async login(loginUserDto: LoginUserDto): Promise<boolean> {
+    async findById(id: number): Promise<User | undefined> {
+        return this.usersRepository.findOne({
+            where: { id }
+        });
+    }
+
+    async login(loginUserDto: LoginUserDto): Promise<string | null> {
         const user = await this.usersRepository.findOne({
             where: { email: loginUserDto.email }
         });
 
         if (user && await bcrypt.compare(loginUserDto.password, user.password)) {
-            return true; // 로그인 성공
+            const payload = { username: user.username, sub: user.id };
+            return this.jwtService.sign(payload);
         }
 
-        return false; // 로그인 실패
+        throw new HttpException('아이디와 비밀번호를 다시 확인해주세요.', HttpStatus.NOT_FOUND)
     }
 
     async deleteUser(id: string): Promise<boolean> {
@@ -49,7 +70,13 @@ export class UsersService {
         return result.affected > 0;
     }
 
-    async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<boolean> {
+    async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<boolean> {
+
+        let user = await this.findById(id);
+        if (!user && await bcrypt.compare(updateUserDto.originalPassword, user.password)) {
+            throw new HttpException('비밀번호가 일치하지 않습니다.', HttpStatus.UNAUTHORIZED);
+        }
+
         const result = await this.usersRepository.update(id, updateUserDto);
         return result.affected > 0;
     }

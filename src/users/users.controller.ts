@@ -1,30 +1,22 @@
-import {Body, Controller, Delete, HttpException, HttpStatus, Param, Patch, Post} from '@nestjs/common';
+import {Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post} from '@nestjs/common';
 import {CreateUserDto} from './dto/create-user.dto';
 import {UsersService} from './users.service';
 import {LoginUserDto} from "./dto/login-user.dto";
 import {UpdateUserDto} from "./dto/update-user.dto";
+import {User} from "./entities/user.entity";
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) {}
+    constructor(private readonly usersService: UsersService) {
+    }
 
     @Post('signup')
     async signUp(@Body() createUserDto: CreateUserDto): Promise<any> {
-        try {
-            return await this.usersService.create(createUserDto);
-        } catch (error) {
-            // 에러 메시지를 바로 접근
-            if (error.message === '이미 등록된 이메일입니다.') {
-                throw new HttpException(error.message, HttpStatus.CONFLICT);
-            } else {
-                // 다른 모든 서버 에러에 대한 처리
-                throw new HttpException('서버 에러', HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        }
+        return await this.usersService.create(createUserDto);
     }
 
     @Post('login')
-    async signIn(@Body() loginUserDto: LoginUserDto): Promise<Boolean> {
+    async signIn(@Body() loginUserDto: LoginUserDto): Promise<string | null> {
         return await this.usersService.login(loginUserDto);
     }
 
@@ -37,10 +29,15 @@ export class UsersController {
     }
 
     @Patch(':id')
-    async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<void> {
+    async updateUser(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
         const successful = await this.usersService.updateUser(id, updateUserDto);
         if (!successful) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
+    }
+
+    @Get(':id')
+    async getUser(@Param('id') id: number): Promise<User> {
+        return await this.usersService.findById(id);
     }
 }
