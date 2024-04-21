@@ -6,12 +6,14 @@ import {CreateUserDto} from './dto/create-user.dto';
 import {LoginUserDto} from "./dto/login-user.dto";
 import * as bcrypt from 'bcrypt';
 import {UpdateUserDto} from "./dto/update-user.dto";
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(User)
         private usersRepository: Repository<User>,
+        private jwtService: JwtService
     ) {}
 
     async create(createUserDto: CreateUserDto): Promise<User> {
@@ -50,16 +52,17 @@ export class UsersService {
         });
     }
 
-    async login(loginUserDto: LoginUserDto): Promise<boolean> {
+    async login(loginUserDto: LoginUserDto): Promise<string | null> {
         const user = await this.usersRepository.findOne({
             where: { email: loginUserDto.email }
         });
 
         if (user && await bcrypt.compare(loginUserDto.password, user.password)) {
-            return true; // 로그인 성공
+            const payload = { username: user.username, sub: user.id };
+            return this.jwtService.sign(payload);
         }
 
-        return false; // 로그인 실패
+        throw new HttpException('아이디와 비밀번호를 다시 확인해주세요.', HttpStatus.NOT_FOUND)
     }
 
     async deleteUser(id: string): Promise<boolean> {
