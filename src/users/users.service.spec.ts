@@ -4,7 +4,7 @@ import { UsersService } from "./users.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { User } from "./entities/user.entity";
 import { JwtService } from "@nestjs/jwt";
-import { CreateUserDto, LoginUserDto } from "./dto";
+import { CreateUserDto, LoginUserDto, UpdateUserDto } from "./dto";
 import * as bcrypt from 'bcrypt';
 
 describe('UsersService', () => {
@@ -182,6 +182,49 @@ describe('UsersService', () => {
             const result = await service.deleteUser(mockUserId);
             expect(result).toBe(false);
             expect(mockUserRepository.delete).toHaveBeenCalledWith(mockUserId);
+        });
+    });
+
+    describe('updateUser', () => {
+        let updateUserDto: UpdateUserDto;
+        let existingUser: User;
+
+        beforeEach(() => {
+            updateUserDto = {
+                name: 'Updated Name',
+                nickname: 'Updated Nickname',
+                originalPassword: 'correctPassword',
+                newPassword: 'newPassword123',
+                email: 'update@example.com'
+            };
+
+            existingUser = new User('user1', bcrypt.hashSync('correctPassword', 10), 'Tester', 'test@example.com');
+            existingUser.id = 1;
+        });
+
+        it('should return true when user is updated successfully', async () => {
+            mockUserRepository.findOne.mockResolvedValue(existingUser);
+            mockUserRepository.update.mockResolvedValue({ affected: 1 });
+
+            const result = await service.updateUser(existingUser.id, updateUserDto);
+            expect(result).toBe(true);
+        });
+
+        it('should throw an error when user does not exist', async () => {
+            mockUserRepository.findOne.mockResolvedValue(undefined);
+
+            await expect(service.updateUser(999, updateUserDto)).rejects.toThrow(
+                new HttpException('존재하지 않는 회원입니다.', HttpStatus.NOT_FOUND)
+            );
+        });
+
+        it('should throw an error when the original password does not match', async () => {
+            updateUserDto.originalPassword = 'wrongPassword';
+            mockUserRepository.findOne.mockResolvedValue(existingUser);
+
+            await expect(service.updateUser(existingUser.id, updateUserDto)).rejects.toThrow(
+                new HttpException('비밀번호가 일치하지 않습니다.', HttpStatus.UNAUTHORIZED)
+            );
         });
     });
 });
