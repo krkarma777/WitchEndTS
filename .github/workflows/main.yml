@@ -2,9 +2,9 @@ name: NestJS CI/CD
 
 on:
   push:
-    branches: [ master ]
+    branches: [ '**' ]  # 모든 브랜치에서 푸시 이벤트 발생 시 실행
   pull_request:
-    branches: [ master ]
+    branches: [ '**' ]  # 모든 브랜치를 대상으로 풀 리퀘스트 이벤트 발생 시 실행
 
 jobs:
   build:
