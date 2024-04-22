@@ -1,11 +1,9 @@
-import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {User} from './entities/user.entity';
-import {CreateUserDto} from './dto/create-user.dto';
-import {LoginUserDto} from "./dto/login-user.dto";
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './entities/user.entity';
+import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import * as bcrypt from 'bcrypt';
-import {UpdateUserDto} from "./dto/update-user.dto";
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -14,7 +12,8 @@ export class UsersService {
         @InjectRepository(User)
         private usersRepository: Repository<User>,
         private jwtService: JwtService
-    ) {}
+    ) {
+    }
 
     async create(createUserDto: CreateUserDto): Promise<User> {
         const existingEmail = await this.findByEmail(createUserDto.email);
@@ -71,9 +70,13 @@ export class UsersService {
     }
 
     async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<boolean> {
-
         let user = await this.findById(id);
-        if (!user && await bcrypt.compare(updateUserDto.originalPassword, user.password)) {
+
+        if (!user) {
+            throw new HttpException('존재하지 않는 회원입니다.', HttpStatus.NOT_FOUND);
+        }
+
+        if (!(await bcrypt.compare(updateUserDto.originalPassword, user.password))) {
             throw new HttpException('비밀번호가 일치하지 않습니다.', HttpStatus.UNAUTHORIZED);
         }
 
