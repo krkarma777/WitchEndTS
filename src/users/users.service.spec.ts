@@ -1,10 +1,10 @@
 import { CreateUserDto } from './dto/create-user.dto';
 import { HttpException, HttpStatus } from '@nestjs/common';
-import {Test, TestingModule} from "@nestjs/testing";
-import {UsersService} from "./users.service";
-import {getRepositoryToken} from "@nestjs/typeorm";
-import {User} from "./entities/user.entity";
-import {JwtService} from "@nestjs/jwt";
+import { Test, TestingModule } from "@nestjs/testing";
+import { UsersService } from "./users.service";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { User } from "./entities/user.entity";
+import { JwtService } from "@nestjs/jwt";
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -12,28 +12,14 @@ describe('UsersService', () => {
   let mockJwtService: Partial<JwtService>;
 
   beforeEach(async () => {
-    mockUserRepository = {
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-      delete: jest.fn(),
-      update: jest.fn(),
-    };
-    mockJwtService = {
-      sign: jest.fn(),
-    };
+    mockUserRepository = createMockUserRepository();
+    mockJwtService = { sign: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
-        {
-          provide: getRepositoryToken(User),
-          useValue: mockUserRepository,
-        },
-        {
-          provide: JwtService,
-          useValue: mockJwtService,
-        },
+        { provide: getRepositoryToken(User), useValue: mockUserRepository },
+        { provide: JwtService, useValue: mockJwtService },
       ],
     }).compile();
 
@@ -44,14 +30,19 @@ describe('UsersService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should successfully create a new user', async () => {
-      const createUserDto: CreateUserDto = {
+  describe('create method', () => {
+    let createUserDto: CreateUserDto;
+
+    beforeEach(() => {
+      createUserDto = {
         username: 'testuser',
         email: 'test@example.com',
         password: 'password123',
         nickname: 'testnick'
       };
+    });
+
+    it('should successfully create a new user when provided with valid data', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue(createUserDto);
       mockUserRepository.save.mockResolvedValue(createUserDto);
@@ -61,31 +52,18 @@ describe('UsersService', () => {
       expect(mockUserRepository.save).toHaveBeenCalledWith(createUserDto);
     });
 
-    it('should throw an error if email already exists', async () => {
-      const createUserDto: CreateUserDto = {
-        username: 'testuser',
-        email: 'test@example.com',
-        password: 'password123',
-        nickname: 'testnick'
-      };
-      mockUserRepository.findOne.mockResolvedValue(createUserDto); // Simulate existing user
+    it('should throw an error if the email already exists', async () => {
+      mockUserRepository.findOne.mockResolvedValue(createUserDto);
 
       await expect(service.create(createUserDto)).rejects.toThrow(
           new HttpException('이미 등록된 이메일입니다.', HttpStatus.CONFLICT)
       );
     });
 
-    it('should throw an error if username already exists', async () => {
-      const createUserDto: CreateUserDto = {
-        username: 'testuser',
-        email: 'newemail@example.com',
-        password: 'password123',
-        nickname: 'testnick'
-      };
-      // First call to findOne checks for email, second call checks for username
+    it('should throw an error if the username already exists', async () => {
       mockUserRepository.findOne
-          .mockResolvedValueOnce(null) // No user with this email
-          .mockResolvedValueOnce(createUserDto);
+          .mockResolvedValueOnce(null)  // No user with this email
+          .mockResolvedValueOnce(createUserDto);  // User with this username exists
 
       await expect(service.create(createUserDto)).rejects.toThrow(
           new HttpException('이미 등록된 아이디입니다.', HttpStatus.CONFLICT)
@@ -93,3 +71,13 @@ describe('UsersService', () => {
     });
   });
 });
+
+function createMockUserRepository() {
+  return {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+    update: jest.fn()
+  };
+}
