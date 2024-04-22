@@ -30,6 +30,57 @@ describe('UsersService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('findByUsername', () => {
+    it('should return a User if username is found', async () => {
+      const mockUser = { id: 1, username: 'user1', email: 'test@example.com' };
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      const result = await service.findByUsername('user1');
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return null if username is not found', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.findByUsername('nonexistent');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByEmail', () => {
+    it('should return a User if email is found', async () => {
+      const mockUser = { id: 1, username: 'user1', email: 'test@example.com' };
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      const result = await service.findByEmail('test@example.com');
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return undefined if email is not found', async () => {
+      mockUserRepository.findOne.mockResolvedValue(undefined);
+
+      const result = await service.findByEmail('nonexistent@example.com');
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('findById', () => {
+    it('should return a User if id is found', async () => {
+      const mockUser = { id: 1, username: 'user1', email: 'test@example.com' };
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      const result = await service.findById(1);
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return undefined if id is not found', async () => {
+      mockUserRepository.findOne.mockResolvedValue(undefined);
+
+      const result = await service.findById(999);
+      expect(result).toBeUndefined();
+    });
+  });
+
   describe('create method', () => {
     let createUserDto: CreateUserDto;
 
