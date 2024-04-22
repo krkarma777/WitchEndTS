@@ -164,6 +164,26 @@ describe('UsersService', () => {
             );
         });
     });
+
+    describe('deleteUser', () => {
+        it('should return true when the user is successfully deleted', async () => {
+            const mockUserId = '1';
+            mockUserRepository.delete.mockResolvedValue({ affected: 1 });  // Mocking delete method to simulate one row affected
+
+            const result = await service.deleteUser(mockUserId);
+            expect(result).toBe(true);
+            expect(mockUserRepository.delete).toHaveBeenCalledWith(mockUserId);
+        });
+
+        it('should return false when no user is found to delete', async () => {
+            const mockUserId = '999';  // Non-existent user ID
+            mockUserRepository.delete.mockResolvedValue({ affected: 0 });  // Mocking delete method to simulate no rows affected
+
+            const result = await service.deleteUser(mockUserId);
+            expect(result).toBe(false);
+            expect(mockUserRepository.delete).toHaveBeenCalledWith(mockUserId);
+        });
+    });
 });
 
 function createMockUserRepository() {
